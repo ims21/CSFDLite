@@ -1,5 +1,4 @@
 from distutils.core import setup
-import setup_translate
 
 pkg = 'Extensions.CSFDLite'
 setup(name = 'enigma2-plugin-extensions-csfdlite',
