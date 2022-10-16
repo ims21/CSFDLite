@@ -1,5 +1,4 @@
 from distutils.core import setup
-import setup_translate
 
 pkg = 'Extensions.CSFDLite'
 setup (name = 'enigma2-plugin-extensions-csfdlite',
@@ -7,5 +6,4 @@ setup (name = 'enigma2-plugin-extensions-csfdlite',
 	description = 'display event info from csfd server',
 	packages = [pkg],
 	package_dir = {pkg: 'plugin'},
-	cmdclass = setup_translate.cmdclass, # for translation
 	)
