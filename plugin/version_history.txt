@@ -1,0 +1,27 @@
+verze 1.6 - 16.10.2022
+- oprava pro python 3 by ims21
+
+﻿verzia 1.5 - 16.03.2022
+- odstranenie referencie na distutils
+
+verzia 1.4 - 11.03.2022
+- po aktualizacii sa ponukne moznost restartovat pristroj (GUI)
+- oprava zobrazovania hodnotenia
+
+verzia 1.3 - 08.02.2022
+- oprava vyhladavania
+- pridane radenie komentarov podla bodov uzivatelov
+
+verzia 1.2 - 25.01.2022
+- oprava nacitavania pri volbe ineho skinu ako aktualizaciou
+- oprava hviezdiciek
+- ako fallback sa nastavi skinHD.xml
+
+verzia 1.1 - 24.01.2022
+- pridana nova obrazovka - nastavenia
+
+verzia 1.0 - 20.01.2022
+- prvotna verzia po prerabke na github (vychadza z poslednej verzie 1.04 zverejnenej uzivatelom @mik9)
+- presunutie pluginu na github aj s aktualizaciou cez tento portal
+- uprava kompatibility py2/py3
+- oprava nahradenia imdb
