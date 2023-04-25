@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.5"
+PLUGIN_VERSION = "1.6.1"
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -972,7 +972,7 @@ class CSFDLite(Screen):
 			obory = ['Režie', 'Předloha', 'Scénář', 'Kamera','Hudba', 'Hrají'] if sys.version_info[0] == 3 else ['Re\xc5\xbeie', 'P\xc5\x99edloha', 'Sc\xc3\xa9n\xc3\xa1\xc5\x99', 'Kamera','Hudba', 'Hraj\xc3\xad']
 			oborytext = ""
 			for obor in obory:
-				jmena = self.najdi('<h4>' + obor + ': </h4>(.*?)</div>', self.inhtml)
+				jmena = self.najdi('<h4>' + obor + ':</h4>(.*?)</div>', self.inhtml)
 				autori = ""
 				for tvurce in self.hledejVse('<a href=".*?">(.*?)</a>', jmena):
 					autori += tvurce + ", "
