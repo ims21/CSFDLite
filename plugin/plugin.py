@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.6.2" # ims
+PLUGIN_VERSION = "1.6.3" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -370,7 +370,7 @@ class CSFDLite(Screen):
 		self.resultlist = []
 		self["menu"] = MenuList(self.resultlist)
 		self["menu"].hide()
-		self["key_red"] = Button("Nastavení")
+		self["key_red"] = Button("Zavřít")
 		self["key_green"] = Button("")
 		self["key_yellow"] = Button("")
 		self["key_blue"] = Button("")
@@ -391,7 +391,7 @@ class CSFDLite(Screen):
 			"upLite": self.pageUp,
 			"rightLite": self.vpravo,
 			"leftLite": self.vlevo,
-			"redLite": self.openSettings,
+			"redLite": self.__onClose,
 			"greenLite": self.showMenu,
 			"yellowLite": self.showDetails,
 			"blueLite": self.showExtras,
@@ -645,10 +645,14 @@ class CSFDLite(Screen):
 	def contextMenu(self):
 		menu = []
 		buttons = []
-		menu.append((_("Hledaný název"), 1))
+		menu.append((_("Hledat název"), 1))
 		buttons += ["7"]
-		menu.append((_("Vybrat název z přehledu kanálů"), 2))
+		menu.append((_("Upravit název a vyhledat"), 2))
 		buttons += [""]
+		menu.append((_("Vybrat název z přehledu kanálů"), 5))
+		buttons += [""]
+		menu.append((_("Nastavení"), 20))
+		buttons += ["menu"]
 		self.session.openWithCallback(self.contextMenuCallback, ChoiceBox, title=_("Zvolte operaci:"), list=menu, keys=["dummy" if key == "" else key for key in buttons])
 
 	def contextMenuCallback(self, choice):
@@ -657,10 +661,14 @@ class CSFDLite(Screen):
 		if choice[1] == 1:
 			self.searchTitle()
 		elif choice[1] == 2:
+			self.searchTitle(unquote(self.eventName))
+		elif choice[1] == 5:
 			self.openChannelSelection()
+		elif  choice[1] == 20:
+			self.openSettings()
 
-	def searchTitle(self):
-		self.session.openWithCallback(self.searchMovieCallback, VirtualKeyBoard, title=(_("Zadejte hledaný název")), text="") #unquote(self.eventName))
+	def searchTitle(self, text=""):
+		self.session.openWithCallback(self.searchMovieCallback, VirtualKeyBoard, title=(_("Zadejte hledaný název")), text=text)
 
 	def searchMovieCallback(self, hostname=None):
 		if hostname:
