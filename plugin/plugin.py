@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.6.1"
+PLUGIN_VERSION = "1.6.2" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -15,7 +15,9 @@ from enigma import ePicLoad, eServiceReference, eServiceCenter, getDesktop, iSer
 from Screens.Screen import Screen
 from Screens.EpgSelection import EPGSelection
 from Screens.ChannelSelection import SimpleChannelSelection
+from Screens.ChoiceBox import ChoiceBox
 from Screens.MessageBox import MessageBox
+from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Components.ActionMap import ActionMap
 from Components.Pixmap import Pixmap
 from Components.Label import Label
@@ -47,7 +49,7 @@ SKIN_PATH = path.join(resolveFilename(SCOPE_PLUGINS), 'Extensions/CSFDLite')
 skinChoices = [(fname, path.splitext(fname)[0].replace('skin','').replace('_','')) for fname in listdir(SKIN_PATH) if fname.startswith('skin') and fname.endswith('.xml') ]
 skinChoices.insert(0,'auto')
 config.plugins.CSFDLite.skin = ConfigSelection(default="auto", choices=skinChoices)
-order = [('1', 'Podľa dátumu zostupne'), ('2', 'Podľa dátumu vzostupne'), ('3', 'Podľa hodnotenia'), ('4', 'Podľa bodov')]
+order = [('1', 'Podle data sestupně'), ('2', 'Podle data vzastupně'), ('3', 'Podle hodnocení'), ('4', 'Podle bodů')]
 config.plugins.CSFDLite.commentsOrder = ConfigSelection(default="1", choices=order)
 config.plugins.CSFDLite.replaceImdb = ConfigYesNo(default=False)
 ####################### SETTINGS
@@ -201,9 +203,9 @@ class CSFDLiteConfigScreen(Screen, ConfigListScreen):
 		</screen>
 		''' % (fntTitle, itmHeight, fntDmm, fntFooter, fntFooter)
 
-		self['title_label'] = Label("CSFDLite - Nastavenia")
-		self["key_red"] = Label("Zrušiť")
-		self["key_green"] = Label("Uložiť")
+		self['title_label'] = Label("CSFDLite - Nastavení")
+		self["key_red"] = Label("Zrušit")
+		self["key_green"] = Label("Uložit")
 
 		self["actions"] = ActionMap(["SetupActions", "ColorActions", "DirectionActions"],
 		{
@@ -221,8 +223,8 @@ class CSFDLiteConfigScreen(Screen, ConfigListScreen):
 	def getSettings(self):
 		self.config_list_entries = []
 		self.config_list_entries.append(getConfigListEntry("Skin", config.plugins.CSFDLite.skin))
-		self.config_list_entries.append(getConfigListEntry("Radenie komentárov", config.plugins.CSFDLite.commentsOrder))
-		self.config_list_entries.append(getConfigListEntry("Nahradiť IMDB", config.plugins.CSFDLite.replaceImdb))
+		self.config_list_entries.append(getConfigListEntry("Řazení komentářů", config.plugins.CSFDLite.commentsOrder))
+		self.config_list_entries.append(getConfigListEntry("Nahradit IMDB", config.plugins.CSFDLite.replaceImdb))
 		self["config"].list = self.config_list_entries
 		self["config"].setList(self.config_list_entries)
 
@@ -250,7 +252,7 @@ class CSFDLiteConfigScreen(Screen, ConfigListScreen):
 				self.close(True)
 		self.saveAll()
 		if self.skinBefore != config.plugins.CSFDLite.skin.value:
-			self.session.openWithCallback(restart_e2, MessageBox, "Zmeny v nastaveniach sa prejavia po reštarte E2. Chcete reštartovať teraz?", type=MessageBox.TYPE_YESNO)
+			self.session.openWithCallback(restart_e2, MessageBox, "Změny v nastaveních se projeví po reštartu E2. Chcete restartovat nyní?", type=MessageBox.TYPE_YESNO)
 		else:
 			self.close(True)
 	def keyCancel(self):
@@ -368,7 +370,7 @@ class CSFDLite(Screen):
 		self.resultlist = []
 		self["menu"] = MenuList(self.resultlist)
 		self["menu"].hide()
-		self["key_red"] = Button("Nastavenia")
+		self["key_red"] = Button("Nastavení")
 		self["key_green"] = Button("")
 		self["key_yellow"] = Button("")
 		self["key_blue"] = Button("")
@@ -393,7 +395,7 @@ class CSFDLite(Screen):
 			"greenLite": self.showMenu,
 			"yellowLite": self.showDetails,
 			"blueLite": self.showExtras,
-			"contextMenuLite": self.openChannelSelection,
+			"contextMenuLite": self.contextMenu,
 			"showEventInfoLite": self.showDetails
 		}, -1)
 		try:
@@ -581,7 +583,7 @@ class CSFDLite(Screen):
 			self["extralabel"].hide()
 			self["titlelabel"].hide()
 			self["detailslabel"].hide()
-			self["key_blue"].setText("")
+			self["key_blue"].setText("Vyhledat")
 			self["key_green"].setText("Seznam")
 			self["key_yellow"].setText("Info o filmu")
 			self.Page = 0
@@ -637,6 +639,43 @@ class CSFDLite(Screen):
 			self["starsbg"].hide()
 			self["ratinglabel"].hide()
 			self.Page = 2
+		elif self.Page == 0:
+			self.searchTitle()
+
+	def contextMenu(self):
+		menu = []
+		buttons = []
+		menu.append((_("Hledaný název"), 1))
+		buttons += ["7"]
+		menu.append((_("Vybrat název z přehledu kanálů"), 2))
+		buttons += [""]
+		self.session.openWithCallback(self.contextMenuCallback, ChoiceBox, title=_("Zvolte operaci:"), list=menu, keys=["dummy" if key == "" else key for key in buttons])
+
+	def contextMenuCallback(self, choice):
+		if choice is None:
+			return
+		if choice[1] == 1:
+			self.searchTitle()
+		elif choice[1] == 2:
+			self.openChannelSelection()
+
+	def searchTitle(self):
+		self.session.openWithCallback(self.searchMovieCallback, VirtualKeyBoard, title=(_("Zadejte hledaný název")), text="") #unquote(self.eventName))
+
+	def searchMovieCallback(self, hostname=None):
+		if hostname:
+			self.predanypopis = ""
+			self.eventName = hostname
+			self.Page = 0
+			self.resultlist = []
+			self["menu"].hide()
+			self["ratinglabel"].show()
+			self["detailslabel"].show()
+			self["poster"].hide()
+			self["stars"].hide()
+			self["starsbg"].hide()
+			self.getCSFD()
+#			self.session.open(CSFDLite, hostname)
 
 	def openChannelSelection(self):
 		self.session.openWithCallback(
@@ -883,7 +922,9 @@ class CSFDLite(Screen):
 			# if self.commentsSort == 2:
 			# 	razenikomentaru = "↓h"
 				
-			self["key_blue"].setText(toStr("Komentáře")) # + razenikomentaru))		
+			self["key_blue"].setText(toStr("Komentáře")) # + razenikomentaru))
+		else:
+			self["key_blue"].setText("")
 
 	def CSFDparse(self):
 		print("[CSFDparse]")
@@ -969,18 +1010,31 @@ class CSFDLite(Screen):
 					Detailstext += termin + '      '
 				Detailstext += '\n\n'
 
-			obory = ['Režie', 'Předloha', 'Scénář', 'Kamera','Hudba', 'Hrají'] if sys.version_info[0] == 3 else ['Re\xc5\xbeie', 'P\xc5\x99edloha', 'Sc\xc3\xa9n\xc3\xa1\xc5\x99', 'Kamera','Hudba', 'Hraj\xc3\xad']
+#			obory = ['Režie', 'Předloha', 'Scénář', 'Kamera','Hudba', 'Hrají'] if sys.version_info[0] == 3 else ['Re\xc5\xbeie', 'P\xc5\x99edloha', 'Sc\xc3\xa9n\xc3\xa1\xc5\x99', 'Kamera','Hudba', 'Hraj\xc3\xad']
+			obory = ['Re\xc5\xbeie', 'P\xc5\x99edloha', 'Sc\xc3\xa9n\xc3\xa1\xc5\x99', 'Kamera','Hudba', 'Hraj\xc3\xad', 'Režie', 'Předloha', 'Scénář', 'Zvuk', 'Střih', 'Hrají']
 			oborytext = ""
 			for obor in obory:
-				jmena = self.najdi('<h4>' + obor + ':</h4>(.*?)</div>', self.inhtml)
-				autori = ""
-				for tvurce in self.hledejVse('<a href=".*?">(.*?)</a>', jmena):
-					autori += tvurce + ", "
-				if autori != "":
-					autori = autori[0:len(autori)-2]
-					if obor == 'Hrají':
-						oborytext += '\n'	
-					oborytext += obor + ': ' + autori + '\n'
+				try:
+					jmena = self.najdi('<h4>' + obor + ':.*?</h4>(.*?)</div>', self.inhtml)
+					autori = ""
+					for tvurce in self.hledejVse('<a href=".*?">(.*?)</a>', jmena):
+						autori += tvurce + ", "
+					if autori != "":
+						autori = autori[0:len(autori)-2]
+						if obor == 'Hrají':
+							oborytext += '\n'
+						oborytext += obor + ': ' + autori + '\n'
+				except:
+					pass
+#				jmena = self.najdi('<h4>' + obor + ':</h4>(.*?)</div>', self.inhtml)
+#				autori = ""
+#				for tvurce in self.hledejVse('<a href=".*?">(.*?)</a>', jmena):
+#					autori += tvurce + ", "
+#				if autori != "":
+#					autori = autori[0:len(autori)-2]
+#					if obor == 'Hrají':
+#						oborytext += '\n'
+#					oborytext += obor + ': ' + autori + '\n'
 			Detailstext += oborytext
 			if oborytext != "":
 				Detailstext += '\n'
