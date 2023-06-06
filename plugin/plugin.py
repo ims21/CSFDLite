@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.6.3" # ims
+PLUGIN_VERSION = "1.6.4" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -49,9 +49,18 @@ SKIN_PATH = path.join(resolveFilename(SCOPE_PLUGINS), 'Extensions/CSFDLite')
 skinChoices = [(fname, path.splitext(fname)[0].replace('skin','').replace('_','')) for fname in listdir(SKIN_PATH) if fname.startswith('skin') and fname.endswith('.xml') ]
 skinChoices.insert(0,'auto')
 config.plugins.CSFDLite.skin = ConfigSelection(default="auto", choices=skinChoices)
+config.plugins.CSFDLite.rezie = ConfigYesNo(default=True)
+config.plugins.CSFDLite.predloha = ConfigYesNo(default=True)
+config.plugins.CSFDLite.scenar = ConfigYesNo(default=True)
+config.plugins.CSFDLite.hudba = ConfigYesNo(default=True)
+config.plugins.CSFDLite.kamera = ConfigYesNo(default=True)
+config.plugins.CSFDLite.zvuk = ConfigYesNo(default=False)
+config.plugins.CSFDLite.strih = ConfigYesNo(default=False)
+config.plugins.CSFDLite.hraji = ConfigYesNo(default=True)
 order = [('1', 'Podle data sestupně'), ('2', 'Podle data vzastupně'), ('3', 'Podle hodnocení'), ('4', 'Podle bodů')]
 config.plugins.CSFDLite.commentsOrder = ConfigSelection(default="1", choices=order)
 config.plugins.CSFDLite.replaceImdb = ConfigYesNo(default=False)
+
 ####################### SETTINGS
 
 class eConnectCallbackObj:
@@ -223,6 +232,14 @@ class CSFDLiteConfigScreen(Screen, ConfigListScreen):
 	def getSettings(self):
 		self.config_list_entries = []
 		self.config_list_entries.append(getConfigListEntry("Skin", config.plugins.CSFDLite.skin))
+		self.config_list_entries.append(getConfigListEntry("Režie", config.plugins.CSFDLite.rezie))
+		self.config_list_entries.append(getConfigListEntry("Předloha", config.plugins.CSFDLite.predloha))
+		self.config_list_entries.append(getConfigListEntry("Scénář", config.plugins.CSFDLite.scenar))
+		self.config_list_entries.append(getConfigListEntry("Hudba", config.plugins.CSFDLite.hudba))
+		self.config_list_entries.append(getConfigListEntry("Kamera", config.plugins.CSFDLite.kamera))
+		self.config_list_entries.append(getConfigListEntry("Zvuk", config.plugins.CSFDLite.zvuk))
+		self.config_list_entries.append(getConfigListEntry("Střih", config.plugins.CSFDLite.strih))
+		self.config_list_entries.append(getConfigListEntry("Hrají", config.plugins.CSFDLite.hraji))
 		self.config_list_entries.append(getConfigListEntry("Řazení komentářů", config.plugins.CSFDLite.commentsOrder))
 		self.config_list_entries.append(getConfigListEntry("Nahradit IMDB", config.plugins.CSFDLite.replaceImdb))
 		self["config"].list = self.config_list_entries
@@ -409,6 +426,8 @@ class CSFDLite(Screen):
 	def openSettings(self):
 		def refreshSettings(cb = None):
 			self.commentsSort = int(config.plugins.CSFDLite.commentsOrder.value)
+			if cb:
+				self.CSFDparse()
 		try:
 			self.session.openWithCallback(refreshSettings, CSFDLiteConfigScreen)
 		except:
@@ -1018,9 +1037,11 @@ class CSFDLite(Screen):
 					Detailstext += termin + '      '
 				Detailstext += '\n\n'
 
-#			obory = ['Režie', 'Předloha', 'Scénář', 'Kamera','Hudba', 'Hrají'] if sys.version_info[0] == 3 else ['Re\xc5\xbeie', 'P\xc5\x99edloha', 'Sc\xc3\xa9n\xc3\xa1\xc5\x99', 'Kamera','Hudba', 'Hraj\xc3\xad']
-			obory = ['Re\xc5\xbeie', 'P\xc5\x99edloha', 'Sc\xc3\xa9n\xc3\xa1\xc5\x99', 'Kamera','Hudba', 'Hraj\xc3\xad', 'Režie', 'Předloha', 'Scénář', 'Zvuk', 'Střih', 'Hrají']
+#			obory = ['Re\xc5\xbeie', 'P\xc5\x99edloha', 'Sc\xc3\xa9n\xc3\xa1\xc5\x99', 'Kamera', 'Hudba', 'Hraj\xc3\xad', 'Režie', 'Předloha', 'Scénář', 'Zvuk', 'Střih', 'Hrají']
+			obory = ['Kamera', 'Hudba', 'Režie', 'Předloha', 'Scénář', 'Zvuk', 'Střih', 'Hrají']
 			oborytext = ""
+			rezie = hudba = scenar = predloha = kamera = zvuk = strih = hraji = ""
+			zbyle_obory = True
 			for obor in obory:
 				try:
 					jmena = self.najdi('<h4>' + obor + ':.*?</h4>(.*?)</div>', self.inhtml)
@@ -1029,20 +1050,41 @@ class CSFDLite(Screen):
 						autori += tvurce + ", "
 					if autori != "":
 						autori = autori[0:len(autori)-2]
+						if obor == 'Režie':
+							rezie = obor + ': ' + autori + '\n'
+							continue
+						if obor == 'Předloha':
+							predloha = obor + ': ' + autori + '\n'
+							continue
+						if obor == 'Scénář':
+							scenar = obor + ': ' + autori + '\n'
+							continue
+						if obor == 'Hudba':
+							hudba = obor + ': ' + autori + '\n'
+							continue
+						if obor == 'Kamera':
+							kamera = obor + ': ' + autori + '\n'
+							continue
+						if obor == 'Zvuk':
+							zvuk = obor + ': ' + autori + '\n'
+							continue
+						if obor == 'Střih':
+							strih = obor + ': ' + autori + '\n'
+							continue
 						if obor == 'Hrají':
-							oborytext += '\n'
-						oborytext += obor + ': ' + autori + '\n'
+							hraji = obor + ': ' + autori + '\n'
+							continue
 				except:
 					pass
-#				jmena = self.najdi('<h4>' + obor + ':</h4>(.*?)</div>', self.inhtml)
-#				autori = ""
-#				for tvurce in self.hledejVse('<a href=".*?">(.*?)</a>', jmena):
-#					autori += tvurce + ", "
-#				if autori != "":
-#					autori = autori[0:len(autori)-2]
-#					if obor == 'Hrají':
-#						oborytext += '\n'
-#					oborytext += obor + ': ' + autori + '\n'
+			oborytext = rezie if config.plugins.CSFDLite.rezie.value else ''
+			oborytext += predloha if config.plugins.CSFDLite.predloha.value else ''
+			oborytext += scenar if config.plugins.CSFDLite.scenar.value else ''
+			oborytext += hudba if config.plugins.CSFDLite.hudba.value else ''
+			oborytext += kamera if config.plugins.CSFDLite.kamera.value else ''
+			oborytext += zvuk if config.plugins.CSFDLite.zvuk.value else ''
+			oborytext += strih if config.plugins.CSFDLite.strih.value else ''
+			oborytext += ('\n' + hraji) if config.plugins.CSFDLite.hraji.value else ''
+
 			Detailstext += oborytext
 			if oborytext != "":
 				Detailstext += '\n'
