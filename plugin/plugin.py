@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.6.4" # ims
+PLUGIN_VERSION = "1.6.5" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -496,7 +496,7 @@ class CSFDLite(Screen):
 			kompletnazev+= "E" + epizoda.zfill(2)
 		elif rimska_na_konci:
 			bserial = True
-			kompletnazev+= "série%20" + self.rimskeArabske(rimska_na_konci)
+			kompletnazev+= "serie%20" + self.rimskeArabske(rimska_na_konci)
 	
 		serialy = self.najdi('\s+([IVX]{0,7}\.?\s?\([0-9]?[0-9]?[0-9][,-]?\s?[0-9]?[0-9]?[0-9]?\))', nazev1)
 		casti = self.najdi('\s+(\(?[0-9]?[0-9]?[0-9]/[0-9]?[0-9]?[0-9]\)?)(?![0-9])', nazev1)
