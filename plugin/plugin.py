@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.6.5" # ims
+PLUGIN_VERSION = "1.6.06" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -831,7 +831,7 @@ class CSFDLite(Screen):
 			nazevfilmu = self.najdi('<h1 itemprop=\"name\">(.*?)<', self.inhtml)
 			nazevfilmu = nazevfilmu.replace("\t","").replace("\n","")
 			self.resultlist = [(nazevfilmu, odkaz)]
-		elif "SFD.cz </title>" in self.inhtml:
+		elif "SFD.cz</title>" in self.inhtml:
 			print("[CSFDLite] ziskavani seznamu 2")
 			for odkaz, filmnazev, filminfo in self.hledejVse('<h3.*?<a href="/film/(.*?)".*?"film-title-name">(.*?)</a>(.*?)</h3>', self.inhtml):
 				hlavninazev = filmnazev
@@ -866,7 +866,7 @@ class CSFDLite(Screen):
 			nazevfilmu = self.najdi('<h1 itemprop=\"name\">(.*?)<', self.inhtml)
 			nazevfilmu = nazevfilmu.replace("\t","").replace("\n","")
 			self.resultlist = [(nazevfilmu, odkaz)]
-		elif "SFD.cz </title>" in self.inhtml:
+		elif "SFD.cz</title>" in self.inhtml:
 			print("[CSFDLite] ziskavani seznamu 3")
 			for odkaz, filmnazev, filminfo in self.hledejVse('<h3.*?<a href="/film/(.*?)".*?"film-title-name">(.*?)</a>(.*?)</h3>', self.inhtml):
 				hlavninazev = filmnazev
