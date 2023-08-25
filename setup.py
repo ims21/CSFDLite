@@ -2,7 +2,7 @@ from distutils.core import setup
 
 pkg = 'Extensions.CSFDLite'
 setup (name = 'enigma2-plugin-extensions-csfdlite',
-	version = '1.6.06',
+	version = '1.7.0',
 	description = 'display event info from csfd server',
 	packages = [pkg],
 	package_dir = {pkg: 'plugin'},
