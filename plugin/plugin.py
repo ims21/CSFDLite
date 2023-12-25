@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.7.0" # ims
+PLUGIN_VERSION = "1.7.1" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -529,6 +529,7 @@ class CSFDLite(Screen):
 
 	def nactiKomentare(self, predanastranka):
 		vyslednytext = ""
+#		print(predanastranka)
 		komentare = self.najdi('<h2>\s+Recenze(.*?)</section>', predanastranka)
 		for jedenkomentar in self.hledejVse('<article(.*?)/article>', komentare):
 			autorkomentare = self.najdi('class="user-title-name">(.*?)<', jedenkomentar)
@@ -1023,7 +1024,10 @@ class CSFDLite(Screen):
 				Detailstext += '\n'
 
 			zanr = self.najdi('<div class="genres">(.*?)</div>', self.inhtml)
-			Detailstext += zanr + '\n'
+			pattern = re.compile(r'(?:<a href=".*?">)?(.*?)(?:</a>)?')
+			zanry = re.findall(pattern, zanr)
+			result = ''.join(zanry)
+			Detailstext += result + '\n'
 
 			zemerokdelka = self.najdi('<div class="origin">(.*?)</div>', self.inhtml)
 			zemerokdelka = zemerokdelka.replace('<span itemprop="dateCreated">', '').replace('</span>', '').replace('<span>', '')
