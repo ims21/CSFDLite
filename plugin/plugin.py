@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.7.1" # ims
+PLUGIN_VERSION = "1.8.1" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
