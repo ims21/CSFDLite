@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.8.1" # ims
+PLUGIN_VERSION = "1.8.2" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -662,6 +662,14 @@ class CSFDLite(Screen):
 		elif self.Page == 0:
 			self.searchTitle()
 
+	def isIMDb(self):
+		try:
+			from Plugins.Extensions.IMDb.plugin import eventinfo
+		except ImportError:
+			return False
+		else:
+			return True
+
 	def contextMenu(self):
 		menu = []
 		buttons = []
@@ -671,6 +679,9 @@ class CSFDLite(Screen):
 		buttons += [""]
 		menu.append((_("Vybrat název z přehledu kanálů"), 5))
 		buttons += [""]
+		if self.isIMDb():
+			menu.append((_("Vyhledat v IMDb..."), 10))
+			buttons += ["3"]
 		menu.append((_("Nastavení"), 20))
 		buttons += ["menu"]
 		self.session.openWithCallback(self.contextMenuCallback, ChoiceBox, title=_("Zvolte operaci:"), list=menu, keys=["dummy" if key == "" else key for key in buttons])
@@ -684,6 +695,9 @@ class CSFDLite(Screen):
 			self.searchTitle(unquote(self.eventName))
 		elif choice[1] == 5:
 			self.openChannelSelection()
+		elif choice[1] == 10:
+			from Plugins.Extensions.IMDb.plugin import eventinfo
+			eventinfo(self.session, unquote(self.eventName))
 		elif  choice[1] == 20:
 			self.openSettings()
 
