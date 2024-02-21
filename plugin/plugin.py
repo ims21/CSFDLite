@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.8.2" # ims
+PLUGIN_VERSION = "1.8.3" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -670,6 +670,11 @@ class CSFDLite(Screen):
 		else:
 			return True
 
+	def callIMDb(self, eventName=None):
+		if eventName:
+			from Plugins.Extensions.IMDb.plugin import eventinfo
+			eventinfo(self.session, unquote(eventName))
+
 	def contextMenu(self):
 		menu = []
 		buttons = []
@@ -680,8 +685,12 @@ class CSFDLite(Screen):
 		menu.append((_("Vybrat název z přehledu kanálů"), 5))
 		buttons += [""]
 		if self.isIMDb():
-			menu.append((_("Vyhledat v IMDb..."), 10))
+			menu.append((2 * " " + _("Vyhledat v IMDb..."), 10))
 			buttons += ["3"]
+			menu.append((4 * " " + _("Hledat název v IMDb"), 11))
+			buttons += [""]
+			menu.append((4 * " " + _("Upravit název a vyhledat v IMDb"), 12))
+			buttons += [""]
 		menu.append((_("Nastavení"), 20))
 		buttons += ["menu"]
 		self.session.openWithCallback(self.contextMenuCallback, ChoiceBox, title=_("Zvolte operaci:"), list=menu, keys=["dummy" if key == "" else key for key in buttons])
@@ -696,13 +705,17 @@ class CSFDLite(Screen):
 		elif choice[1] == 5:
 			self.openChannelSelection()
 		elif choice[1] == 10:
-			from Plugins.Extensions.IMDb.plugin import eventinfo
-			eventinfo(self.session, unquote(self.eventName))
+			self.callIMDb(unquote(self.eventName))
+		if choice[1] == 11:
+			self.searchTitle(imdb=True)
+		elif choice[1] == 12:
+			self.searchTitle(unquote(self.eventName), imdb=True)
 		elif  choice[1] == 20:
 			self.openSettings()
 
-	def searchTitle(self, text=""):
-		self.session.openWithCallback(self.searchMovieCallback, VirtualKeyBoard, title=(_("Zadejte hledaný název")), text=text)
+	def searchTitle(self, text="", imdb=False):
+		callBackFnc = self.callIMDb if imdb else self.searchMovieCallback
+		self.session.openWithCallback(callBackFnc, VirtualKeyBoard, title=(_("Zadejte hledaný název")), text=text)
 
 	def searchMovieCallback(self, hostname=None):
 		if hostname:
