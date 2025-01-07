@@ -1334,7 +1334,8 @@ class CSFDFoundInFile(Screen):
 		Screen.__init__(self, session)
 		self.session = session
 		self["items"] = Label("".join(items))
-		self["name"] = Label(_("Nalezeno pro '%s':") % name)
+		n = len(items)
+		self["name"] = Label(_("Nalezeno záznamů pro '%s': %d") % (name, n))
 		self["actions"] = ActionMap(["OkCancelActions"],
 		{
 			"ok": self.exit,
@@ -1401,5 +1402,6 @@ def Plugins(**kwargs):
 				icon="csfd.png",
 				where = wherelist,
 				fnc=main)
+
 
 
