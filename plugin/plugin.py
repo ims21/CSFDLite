@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.8.4" # ims
+PLUGIN_VERSION = "1.8.5" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -730,19 +730,22 @@ class CSFDLite(Screen):
 				except:
 					pass
 
-				foundLines = []
+				foundItems = []
 				if config.plugins.CSFDLite.case_sensitive.value:
 					for i, x in enumerate(self.movies):
-						if x.find(text) != -1:
-							foundLines.append(x)
+						if x.find(name) != -1:
+							foundItems.append(x)
 				else:
 					for i, x in enumerate(self.movies):
 						if x.lower().find(name.lower()) != -1:
-							foundLines.append(x)
-				if len(foundLines):
-					self.session.open(CSFDFoundInFile, foundLines)
+							foundItems.append(x)
+				if len(foundItems):
+					self.session.open(CSFDFoundInFile, foundItems, name)
 				else:
-					self.session.open(MessageBox, _("Nenalezeno."), MessageBox.TYPE_INFO, timeout=5)
+					def searchAgain(answer=True):
+						if answer:
+							self.searchTitle(name, search="infile")
+					self.session.openWithCallback(searchAgain, MessageBox, _("Nenalezeno. Upravit hledaný text?"), MessageBox.TYPE_YESNO, default=True)
 			else:
 				self.session.open(MessageBox, toStr("Soubor se seznamem nahrávek nebyl nalezen!"), MessageBox.TYPE_INFO, timeout=5)
 
@@ -762,10 +765,10 @@ class CSFDLite(Screen):
 			buttons += [""]
 			menu.append((4 * " " + _("Upravit název a vyhledat v IMDb"), 12))
 			buttons += [""]
-		menu.append((_("Vyhledat název v souboru"), 14))
-		buttons += ["5"]
-		menu.append((_("Upravit název a vyhledat v souboru"), 15))
+		menu.append((_("Vyhledat v souboru"), 14))
 		buttons += ["0"]
+		menu.append((_("Upravit název a vyhledat v souboru"), 15))
+		buttons += [""]
 		menu.append((_("Nastavení"), 20))
 		buttons += ["menu"]
 		self.session.openWithCallback(self.contextMenuCallback, ChoiceBox, title=_("Zvolte operaci:"), list=menu, keys=["dummy" if key == "" else key for key in buttons])
@@ -1323,15 +1326,15 @@ class CSFDLite(Screen):
 class CSFDFoundInFile(Screen):
 	skin = """
 	<screen name="CSFDFoundInFile" position="fill" title="Nalezeno" flags="wfNoBorder" backgroundColor="background">
-		<widget name="name" position="30,30" size="1860,1020" font="Regular;30"/>
+		<widget name="name" position="30,30" size="1860,35" font="Regular;30" halign="center"/>
+		<widget name="items" position="30,100" size="1860,840" font="Regular;30"/>
 	</screen>"""
 
-	def __init__(self, session, found):
+	def __init__(self, session, items, name):
 		Screen.__init__(self, session)
 		self.session = session
-
-		self["name"] = Label()
-
+		self["items"] = Label("".join(items))
+		self["name"] = Label(_("Nalezeno pro '%s':") % name)
 		self["actions"] = ActionMap(["OkCancelActions"],
 		{
 			"ok": self.exit,
@@ -1340,13 +1343,9 @@ class CSFDFoundInFile(Screen):
 			"red": self.exit,
 		}, -2)
 
-		x = _("Nalezené filmy:\n\n")
-		for i in found:
-			x += i
-		self["name"].setText(x)
-
 	def exit(self):
 		self.close()
+
 
 class CSFDLCDScreen(Screen):
 	skin = """
