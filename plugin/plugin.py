@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.8.3" # ims
+PLUGIN_VERSION = "1.8.4" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -299,7 +299,7 @@ class CSFDLiteConfigScreen(Screen, ConfigListScreen):
 					else:
 						config.plugins.CSFDLite.serchInDirectory.value = config.plugins.CSFDLite.serchInDirectory.default
 						config.plugins.CSFDLite.csv_file.value = config.plugins.CSFDLite.csv_file.default
-						text = _("Nebyl nalezen žádný soubor.")
+						text = _("Nebyl nalezen žádný soubor.\n%s") % latest_file
 					self.session.open(MessageBox, text, MessageBox.TYPE_INFO, timeout=5)
 			from Screens.LocationBox import LocationBox, defaultInhibitDirs
 			inhibitDirs = ["/autofs", "/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/sbin", "/sys", "/usr"]
@@ -310,7 +310,7 @@ class CSFDLiteConfigScreen(Screen, ConfigListScreen):
 			files = [f for f in listdir(directory) if f.startswith(prefix) and f.endswith(extension) and path.isfile(path.join(directory, f))]
 			if files:
 				latest_file = max(files, key=lambda f: path.getmtime(path.join(directory, f)))
-				#latest_file_path = path.join(directory, latest_file)
+				latest_file_path = latest_file
 			else:
 				latest_file_path = None
 			return latest_file_path
@@ -1402,4 +1402,5 @@ def Plugins(**kwargs):
 				icon="csfd.png",
 				where = wherelist,
 				fnc=main)
+
 
