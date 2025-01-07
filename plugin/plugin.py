@@ -722,10 +722,8 @@ class CSFDLite(Screen):
 				self.movies = []
 				try:
 					flines = open(config.plugins.CSFDLite.csv_file.value, "r")
-					lineNo = 1
 					for line in flines:
-						self.movies.append(str(lineNo).zfill(4) + ": " + line)
-						lineNo += 1
+						self.movies.append(line)
 					flines.close()
 				except:
 					pass
@@ -1327,7 +1325,7 @@ class CSFDFoundInFile(Screen):
 	skin = """
 	<screen name="CSFDFoundInFile" position="fill" title="Nalezeno" flags="wfNoBorder" backgroundColor="background">
 		<widget name="name" position="30,30" size="1860,35" font="Regular;30" halign="center"/>
-		<widget name="items" position="30,100" size="1860,840" font="Regular;30"/>
+		<widget name="items" position="30,100" size="1860,945" font="Regular;30"/>
 	</screen>"""
 
 	def __init__(self, session, items, name):
