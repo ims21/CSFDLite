@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.8.5" # ims
+PLUGIN_VERSION = "1.8.6" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -1320,7 +1320,6 @@ class CSFDLite(Screen):
 		del self.picload
 		self.close()
 
-
 class CSFDFoundInFile(Screen):
 	skin = """
 	<screen name="CSFDFoundInFile" position="fill" title="Nalezeno" flags="wfNoBorder" backgroundColor="background">
@@ -1331,15 +1330,19 @@ class CSFDFoundInFile(Screen):
 	def __init__(self, session, items, name):
 		Screen.__init__(self, session)
 		self.session = session
-		self["items"] = Label("".join(items))
+		self["items"] = ScrollLabel("".join(items))
 		n = len(items)
 		self["name"] = Label(_("Nalezeno záznamů pro '%s': %d") % (name, n))
-		self["actions"] = ActionMap(["OkCancelActions"],
+		self["actions"] = ActionMap(["OkCancelActions", "DirectionActions"],
 		{
 			"ok": self.exit,
 			"cancel": self.exit,
 			"green": self.exit,
 			"red": self.exit,
+			"up": self["items"].pageUp,
+			"down": self["items"].pageDown,
+			"left": self["items"].pageUp,
+			"right": self["items"].pageDown
 		}, -2)
 
 	def exit(self):
