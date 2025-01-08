@@ -337,19 +337,21 @@ def check_latest_csv_file():
 	config.plugins.CSFDLite.csv_file.save()
 
 
-class CSFDFoundInFile(Screen):
+class CSFDFoundInRecorded(Screen):
 	skin = """
-	<screen name="CSFDFoundInFile" position="fill" title="Nalezeno" flags="wfNoBorder" backgroundColor="background">
-		<widget name="name" position="30,30" size="1860,35" font="Regular;30" halign="center"/>
+	<screen name="CSFDFoundInRecorded" position="fill" title="Nalezeno" flags="wfNoBorder" backgroundColor="background">
+		<widget name="searched" position="30,30" size="1860,35" font="Regular;30" transparent="1" halign="left"/>
+		<widget name="filename" position="30,30" size="1860,35" font="Regular;30" transparent="1" halign="right"/>
 		<widget name="items" position="30,100" size="1860,945" font="Regular;30"/>
 	</screen>"""
 
-	def __init__(self, session, items, name):
+	def __init__(self, session, found_items, searched_text, file_name):
 		Screen.__init__(self, session)
 		self.session = session
-		self["items"] = ScrollLabel("".join(items))
-		n = len(items)
-		self["name"] = Label(_("Nalezeno záznamů pro \"%s\": %d") % (name, n))
+		self["items"] = ScrollLabel("".join(found_items))
+		self["searched"] = Label(_("Nalezeno záznamů pro \"%s\":  %d") % (searched_text, len(found_items)))
+		self["filename"] = Label(file_name)
+
 		self["actions"] = ActionMap(["OkCancelActions", "DirectionActions"],
 		{
 			"ok": self.exit,
@@ -766,12 +768,13 @@ class CSFDLite(Screen):
 			from Plugins.Extensions.IMDb.plugin import eventinfo
 			eventinfo(self.session, unquote(eventName))
 
-	def callIsInFile(self, name):
+	def callRecorded(self, name):
 		if name:
-			if path.isfile(config.plugins.CSFDLite.csv_file.value):
+			file_list_name = config.plugins.CSFDLite.csv_file.value
+			if path.isfile(file_list_name):
 				self.movies = []
 				try:
-					flines = open(config.plugins.CSFDLite.csv_file.value, "r")
+					flines = open(file_list_name, "r")
 					for line in flines:
 						self.movies.append(line)
 					flines.close()
@@ -788,7 +791,7 @@ class CSFDLite(Screen):
 						if x.lower().find(name.lower()) != -1:
 							foundItems.append(x)
 				if len(foundItems):
-					self.session.open(CSFDFoundInFile, foundItems, name)
+					self.session.open(CSFDFoundInRecorded, foundItems, name, path.basename(file_list_name))
 				else:
 					def searchAgain(answer=True):
 						if answer:
@@ -838,7 +841,7 @@ class CSFDLite(Screen):
 		elif choice[1] == 12:
 			self.searchTitle(unquote(self.eventName), search="imdb")
 		elif choice[1] == 14:
-			self.callIsInFile(unquote(self.eventName))
+			self.callRecorded(unquote(self.eventName))
 		elif choice[1] == 15:
 			self.searchTitle(unquote(self.eventName), search="infile")
 		elif  choice[1] == 20:
@@ -848,7 +851,7 @@ class CSFDLite(Screen):
 		if search == "imdb":
 			callBackFnc = self.callIMDb
 		elif search == "infile":
-			callBackFnc = self.callIsInFile
+			callBackFnc = self.callRecorded
 		else:
 			callBackFnc =  self.searchMovieCallback
 
@@ -1426,6 +1429,7 @@ def Plugins(**kwargs):
 				icon="csfd.png",
 				where = wherelist,
 				fnc=main)
+
 
 
 
