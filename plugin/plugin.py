@@ -28,7 +28,7 @@ from Components.MenuList import MenuList
 from Components.ProgressBar import ProgressBar
 from Components.ConfigList import ConfigListScreen
 from Tools.Directories import fileExists, resolveFilename, SCOPE_PLUGINS
-from Components.config import config, ConfigSubsection, ConfigSelection, configfile, ConfigYesNo, getConfigListEntry, ConfigDirectory, ConfigText
+from Components.config import config, ConfigSubsection, ConfigSelection, configfile, ConfigYesNo, ConfigDirectory, ConfigText
 import traceback
 import re
 from random import *
@@ -60,7 +60,9 @@ config.plugins.CSFDLite.hraji = ConfigYesNo(default=True)
 order = [('1', 'Podle data sestupně'), ('2', 'Podle data vzastupně'), ('3', 'Podle hodnocení'), ('4', 'Podle bodů')]
 config.plugins.CSFDLite.commentsOrder = ConfigSelection(default="1", choices=order)
 config.plugins.CSFDLite.replaceImdb = ConfigYesNo(default=False)
-config.plugins.CSFDLite.serchInDirectory = ConfigDirectory(default="/tmp/")
+config.plugins.CSFDLite.use_file = ConfigYesNo(default=False)
+config.plugins.CSFDLite.check_file = ConfigYesNo(default=True)
+config.plugins.CSFDLite.file_directory = ConfigDirectory(default="/tmp/")
 config.plugins.CSFDLite.case_sensitive = ConfigYesNo(default=False)
 config.plugins.CSFDLite.csv_file = ConfigText(default="")
 ####################### SETTINGS
@@ -181,10 +183,10 @@ class StrictVersion(object):
 class CSFDLiteConfigScreen(Screen, ConfigListScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
-		ConfigListScreen.__init__(self, [], session=session)#, on_change=self.changedEntry)
-		#self.onChangedEntry = [ ]
 		self.skinBefore = config.plugins.CSFDLite.skin.value
-		self.config_list_entries = []
+		self.list = []
+		self.onChangedEntry = []
+		ConfigListScreen.__init__(self, self.list , session=session, on_change=self.changedEntry)
 		size = getDesktop(0).size()
 		isDmm = False
 		try:
@@ -233,27 +235,34 @@ class CSFDLiteConfigScreen(Screen, ConfigListScreen):
 		self.onShown.append(self.getSettings)
 
 	def getSettings(self):
-		self.config_list_entries = []
-		self.config_list_entries.append(getConfigListEntry("Skin", config.plugins.CSFDLite.skin))
-		self.config_list_entries.append(getConfigListEntry("Režie", config.plugins.CSFDLite.rezie))
-		self.config_list_entries.append(getConfigListEntry("Předloha", config.plugins.CSFDLite.predloha))
-		self.config_list_entries.append(getConfigListEntry("Scénář", config.plugins.CSFDLite.scenar))
-		self.config_list_entries.append(getConfigListEntry("Hudba", config.plugins.CSFDLite.hudba))
-		self.config_list_entries.append(getConfigListEntry("Kamera", config.plugins.CSFDLite.kamera))
-		self.config_list_entries.append(getConfigListEntry("Zvuk", config.plugins.CSFDLite.zvuk))
-		self.config_list_entries.append(getConfigListEntry("Střih", config.plugins.CSFDLite.strih))
-		self.config_list_entries.append(getConfigListEntry("Hrají", config.plugins.CSFDLite.hraji))
-		self.config_list_entries.append(getConfigListEntry("Řazení komentářů", config.plugins.CSFDLite.commentsOrder))
-		self.config_list_entries.append(getConfigListEntry("Nahradit IMDB", config.plugins.CSFDLite.replaceImdb))
-		self.serchInDirectoryTitle = "Vybrat adresář s .csv seznamem z MovieManager"
-		self.config_list_entries.append(getConfigListEntry(self.serchInDirectoryTitle, config.plugins.CSFDLite.serchInDirectory))
-		self.config_list_entries.append(getConfigListEntry("Rozlišovat velikost písmen při hledání v souboru", config.plugins.CSFDLite.case_sensitive))
-		self["config"].list = self.config_list_entries
-		self["config"].setList(self.config_list_entries)
+		self.dx = 4 * " "
+		self.list = []
+		self.list.append(("Skin", config.plugins.CSFDLite.skin))
+		self.list.append(("Režie", config.plugins.CSFDLite.rezie))
+		self.list.append(("Předloha", config.plugins.CSFDLite.predloha))
+		self.list.append(("Scénář", config.plugins.CSFDLite.scenar))
+		self.list.append(("Hudba", config.plugins.CSFDLite.hudba))
+		self.list.append(("Kamera", config.plugins.CSFDLite.kamera))
+		self.list.append(("Zvuk", config.plugins.CSFDLite.zvuk))
+		self.list.append(("Střih", config.plugins.CSFDLite.strih))
+		self.list.append(("Hrají", config.plugins.CSFDLite.hraji))
+		self.list.append(("Řazení komentářů", config.plugins.CSFDLite.commentsOrder))
+		self.list.append(("Nahradit IMDB", config.plugins.CSFDLite.replaceImdb))
+		self.serchUseFile = _("Používat vyhledávání v souboru")
+		self.list.append((self.serchUseFile, config.plugins.CSFDLite.use_file))
+		if config.plugins.CSFDLite.use_file.value:
+			self.set_directory = _("Vybrat adresář se seznamem z MovieManager")
+			self.list.append((self.dx + self.set_directory, config.plugins.CSFDLite.file_directory))
+			self.list.append((self.dx + _("Kontrolovat soubor při startu"), config.plugins.CSFDLite.check_file))
+			self.list.append((self.dx + _("Rozlišovat velikost písmen při hledání v souboru"), config.plugins.CSFDLite.case_sensitive))
+		self["config"].list = self.list
 
-	#def changedEntry(self):
-		# for x in self.onChangedEntry:
-		# 	x()
+	def changedEntry(self):
+		current = self["config"].getCurrent()[0]
+		if current == self.serchUseFile:
+			self.getSettings()
+		for x in self.onChangedEntry:
+			x()
 
 	def keyLeft(self):
 		ConfigListScreen.keyLeft(self)
@@ -287,36 +296,75 @@ class CSFDLiteConfigScreen(Screen, ConfigListScreen):
 
 	def keyOK(self):
 		current = self["config"].getCurrent()[0]
-		if current == self.serchInDirectoryTitle:
+		if current == self.dx + self.set_directory:
 			def targetDirSelected(res):
 				if res is not None:
-					latest_file = self.find_latest_csv(res)
+					latest_file = find_latest_csv(res)
 					text = ""
 					if latest_file:
-						config.plugins.CSFDLite.serchInDirectory.value = res
+						config.plugins.CSFDLite.file_directory.value = res
 						config.plugins.CSFDLite.csv_file.value = path.join(res, latest_file)
 						text = _("Nalezen soubor:\n\n %s") % latest_file
 					else:
-						config.plugins.CSFDLite.serchInDirectory.value = config.plugins.CSFDLite.serchInDirectory.default
+						config.plugins.CSFDLite.file_directory.value = config.plugins.CSFDLite.file_directory.default
 						config.plugins.CSFDLite.csv_file.value = config.plugins.CSFDLite.csv_file.default
 						text = _("Nebyl nalezen žádný soubor.\n%s") % latest_file
 					self.session.open(MessageBox, text, MessageBox.TYPE_INFO, timeout=5)
 			from Screens.LocationBox import LocationBox, defaultInhibitDirs
 			inhibitDirs = ["/autofs", "/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/sbin", "/sys", "/usr"]
-			self.session.openWithCallback(targetDirSelected, LocationBox, text=_("Select file with movie list"), currDir=config.plugins.CSFDLite.serchInDirectory.value, autoAdd=False, editDir=True, inhibitDirs=inhibitDirs,)
+			self.session.openWithCallback(targetDirSelected, LocationBox, text=_("Select file with movie list"), currDir=config.plugins.CSFDLite.file_directory.value, autoAdd=False, editDir=True, inhibitDirs=inhibitDirs,)
 
-	def find_latest_csv(self, directory, prefix="movies-", extension=".csv"):
-		try:
-			files = [f for f in listdir(directory) if f.startswith(prefix) and f.endswith(extension) and path.isfile(path.join(directory, f))]
-			if files:
-				latest_file = max(files, key=lambda f: path.getmtime(path.join(directory, f)))
-				latest_file_path = latest_file
-			else:
-				latest_file_path = None
-			return latest_file_path
-		except Exception as e:
-			print("Chyba pri hledani souboru:", e)
-			return None
+def find_latest_csv(directory, prefix="movies-", extension=".csv"):
+	try:
+		files = [f for f in listdir(directory) if f.startswith(prefix) and f.endswith(extension) and path.isfile(path.join(directory, f))]
+		if files:
+			latest_file = max(files, key=lambda f: path.getmtime(path.join(directory, f)))
+			latest_file_path = latest_file
+		else:
+			latest_file_path = None
+		return latest_file_path
+	except Exception as e:
+		print("Chyba pri hledani souboru:", e)
+		return None
+
+def check_latest_csv_file():
+	directory = config.plugins.CSFDLite.file_directory.value
+	latest_file = find_latest_csv(directory)
+	if latest_file:
+		config.plugins.CSFDLite.csv_file.value = path.join(directory, latest_file)
+	else:
+		config.plugins.CSFDLite.csv_file.value = config.plugins.CSFDLite.csv_file.default
+	config.plugins.CSFDLite.csv_file.save()
+
+
+class CSFDFoundInFile(Screen):
+	skin = """
+	<screen name="CSFDFoundInFile" position="fill" title="Nalezeno" flags="wfNoBorder" backgroundColor="background">
+		<widget name="name" position="30,30" size="1860,35" font="Regular;30" halign="center"/>
+		<widget name="items" position="30,100" size="1860,945" font="Regular;30"/>
+	</screen>"""
+
+	def __init__(self, session, items, name):
+		Screen.__init__(self, session)
+		self.session = session
+		self["items"] = ScrollLabel("".join(items))
+		n = len(items)
+		self["name"] = Label(_("Nalezeno záznamů pro \"%s\": %d") % (name, n))
+		self["actions"] = ActionMap(["OkCancelActions", "DirectionActions"],
+		{
+			"ok": self.exit,
+			"cancel": self.exit,
+			"green": self.exit,
+			"red": self.exit,
+			"up": self["items"].pageUp,
+			"down": self["items"].pageDown,
+			"left": self["items"].pageUp,
+			"right": self["items"].pageDown
+		}, -2)
+
+	def exit(self):
+		self.close()
+
 
 class CSFDChannelSelection(SimpleChannelSelection):
 	def __init__(self, session):
@@ -462,6 +510,8 @@ class CSFDLite(Screen):
 			self.kontejnerfunguje = True
 		except:
 			self.kontejnerfunguje = False
+		if config.plugins.CSFDLite.use_file.value and config.plugins.CSFDLite.check_file.value:
+			check_latest_csv_file()
 		self.getCSFD()
 
 	def openSettings(self):
@@ -763,10 +813,11 @@ class CSFDLite(Screen):
 			buttons += [""]
 			menu.append((4 * " " + _("Upravit název a vyhledat v IMDb"), 12))
 			buttons += [""]
-		menu.append((_("Vyhledat v souboru"), 14))
-		buttons += ["0"]
-		menu.append((_("Upravit název a vyhledat v souboru"), 15))
-		buttons += [""]
+		if config.plugins.CSFDLite.use_file.value:
+			menu.append((_("Vyhledat v souboru"), 14))
+			buttons += ["0"]
+			menu.append((_("Upravit název a vyhledat v souboru"), 15))
+			buttons += [""]
 		menu.append((_("Nastavení"), 20))
 		buttons += ["menu"]
 		self.session.openWithCallback(self.contextMenuCallback, ChoiceBox, title=_("Zvolte operaci:"), list=menu, keys=["dummy" if key == "" else key for key in buttons])
@@ -1318,34 +1369,6 @@ class CSFDLite(Screen):
 	def __onClose(self):
 		del self.picload_conn
 		del self.picload
-		self.close()
-
-class CSFDFoundInFile(Screen):
-	skin = """
-	<screen name="CSFDFoundInFile" position="fill" title="Nalezeno" flags="wfNoBorder" backgroundColor="background">
-		<widget name="name" position="30,30" size="1860,35" font="Regular;30" halign="center"/>
-		<widget name="items" position="30,100" size="1860,945" font="Regular;30"/>
-	</screen>"""
-
-	def __init__(self, session, items, name):
-		Screen.__init__(self, session)
-		self.session = session
-		self["items"] = ScrollLabel("".join(items))
-		n = len(items)
-		self["name"] = Label(_("Nalezeno záznamů pro '%s': %d") % (name, n))
-		self["actions"] = ActionMap(["OkCancelActions", "DirectionActions"],
-		{
-			"ok": self.exit,
-			"cancel": self.exit,
-			"green": self.exit,
-			"red": self.exit,
-			"up": self["items"].pageUp,
-			"down": self["items"].pageDown,
-			"left": self["items"].pageUp,
-			"right": self["items"].pageDown
-		}, -2)
-
-	def exit(self):
 		self.close()
 
 
