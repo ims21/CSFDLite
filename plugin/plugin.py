@@ -571,7 +571,8 @@ class CSFDLite(Screen):
 			"yellowLite": self.showDetails,
 			"blueLite": self.showExtras,
 			"contextMenuLite": self.contextMenu,
-			"showEventInfoLite": self.showDetails
+			"showEventInfoLite": self.showDetails,
+			"recorded": self.recorded
 		}, -1)
 		try:
 			self.container = eConsoleAppContainer()
@@ -582,6 +583,10 @@ class CSFDLite(Screen):
 		if config.plugins.CSFDLite.use_file.value and config.plugins.CSFDLite.check_file.value:
 			check_latest_csv_file()
 		self.getCSFD()
+
+	def recorded(self):
+		if config.plugins.CSFDLite.use_file.value:
+			self.callRecorded(unquote(self.eventName))
 
 	def openSettings(self):
 		def refreshSettings(cb = None):
