@@ -910,7 +910,7 @@ class CSFDLite(Screen):
 		elif choice[1] == 12:
 			self.searchTitle(unquote(self.eventName), search="imdb")
 		elif choice[1] == 14:
-			self.callRecorded("13")#unquote(self.eventName))
+			self.callRecorded(unquote(self.eventName))
 		elif choice[1] == 15:
 			self.searchTitle(unquote(self.eventName), search="infile")
 		elif  choice[1] == 20:
