@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.8.6" # ims
+PLUGIN_VERSION = "1.8.7" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -11,7 +11,7 @@ PLUGIN_VERSION = "1.8.6" # ims
 
 from Plugins.Plugin import PluginDescriptor
 from twisted.web.client import downloadPage
-from enigma import ePicLoad, eServiceReference, eServiceCenter, getDesktop, iServiceInformation, eConsoleAppContainer
+from enigma import ePicLoad, eServiceReference, eServiceCenter, getDesktop, iServiceInformation, eConsoleAppContainer, gFont
 from Screens.Screen import Screen
 from Screens.EpgSelection import EPGSelection
 from Screens.ChannelSelection import SimpleChannelSelection
@@ -337,17 +337,84 @@ def check_latest_csv_file():
 	config.plugins.CSFDLite.csv_file.save()
 
 
-class CSFDFoundInRecorded(Screen):
+class PreCountScrollLabel(Screen):
+	fsize = 30 # nastavuj zde !
 	skin = """
-	<screen name="CSFDFoundInRecorded" position="fill" title="Nalezeno" flags="wfNoBorder" backgroundColor="background">
-		<widget name="searched" position="30,30" size="1860,35" font="Regular;30" transparent="1" halign="left"/>
-		<widget name="filename" position="30,30" size="1860,35" font="Regular;30" transparent="1" halign="right"/>
-		<widget name="items" position="30,100" size="1860,945" font="Regular;30"/>
-	</screen>"""
+	<screen name="PreCountScrollLabel" position="0,0" size="0,0" flags="wfNoBorder" backgroundColor="background">
+		<widget name="items" position="30,100" size="1860,945" font="Regular;%d"/>
+		<widget name="tmp" position="0,0" size="0,0" font="Regular;%d"/> <!-- nemazat -->
+	</screen>""" % (fsize, fsize)
 
-	def __init__(self, session, found_items, searched_text, file_name):
+	def __init__(self, session, found_items):
 		Screen.__init__(self, session)
 		self.session = session
+		self.found_items = found_items
+		self["tmp"] = Label()
+		self["items"] = ScrollLabel("".join(self.found_items))
+		self.onLayoutFinish.append(self.count)
+
+	def count(self):
+		family, size = self.getFontParameters()
+		width = self.getWidgetWidth(self["items"])
+		text_length = self.getMaxWidth(self.found_items)
+		scrollbar_size = self["items"].scrollbar.size().width()
+		scrollbar_visible = self["items"].scrollbar.isVisible() # nefunguje
+		clear_width = width - scrollbar_size - 10 - 1
+		for i in range(1,20):
+			if text_length >= clear_width:
+				size -= 1
+				fnt = gFont(family, size)
+				self["tmp"].instance.setFont(fnt)
+				text_length = self.getMaxWidth(self.found_items)
+			else:
+				if self["items"].long_text:
+					scrollbar_visible = self["items"].scrollbar.isVisible()
+					self.close((size, self.newHeight("items", family, size)))
+				break
+
+	def newHeight(self, widget_name, font, font_size):
+		old_label_height = self[widget_name].instance.size().height()
+		new_line_height = self.lineHeight(font, font_size)
+		return old_label_height // new_line_height * new_line_height
+
+	def lineHeight(self, family, size):
+		from enigma import gFont
+		fnt = gFont(family, size)
+		self["tmp"].setText("W")
+		self["tmp"].instance.setNoWrap(1)
+		self["tmp"].instance.setFont(fnt)
+		return self["tmp"].instance.calculateSize().height()
+
+	def calculateWidth(self, text):
+		self["tmp"].setText(text)
+		self["tmp"].instance.setNoWrap(1)
+		return self["tmp"].instance.calculateSize().width()
+
+	def getFontParameters(self):
+		return self["tmp"].instance.getFont().family, self["tmp"].instance.getFont().pointSize
+
+	def getMaxWidth(self, items):
+		widths = []
+		for text in items:
+			widths.append(self.calculateWidth(text))
+		return max(widths)
+
+	def getWidgetWidth(self, widget_name):
+		return widget_name.instance.size().width()
+
+
+class CSFDFoundInRecorded(Screen):
+	skin_template = """
+	<screen name="CSFDFoundInRecorded" position="fill" title="Nalezeno" flags="wfNoBorder" backgroundColor="background">
+		<widget name="searched" position="30,30" size="1860,35" font="Regular;30" transparent="1" halign="left"/>
+		<widget name="filename" position="30,30" size="1860,35" font="Regular;24" transparent="1" halign="right" valign="center"/>
+		<widget name="items" position="30,100" size="1860,{height}" font="Regular;{font}" />
+	</screen>
+	"""
+
+	def __init__(self, session, found_items, searched_text, file_name, pars):
+		self.skin = self.skin_template.format(font=pars[0], height=pars[1])
+		Screen.__init__(self, session)
 		self["items"] = ScrollLabel("".join(found_items))
 		self["searched"] = Label(_("Nalezeno záznamů pro \"%s\":  %d") % (searched_text, len(found_items)))
 		self["filename"] = Label(file_name)
@@ -791,7 +858,9 @@ class CSFDLite(Screen):
 						if x.lower().find(name.lower()) != -1:
 							foundItems.append(x)
 				if len(foundItems):
-					self.session.open(CSFDFoundInRecorded, foundItems, name, path.basename(file_list_name))
+					def callback(parameters):
+						self.session.open(CSFDFoundInRecorded, foundItems, name, path.basename(file_list_name), parameters)
+					self.session.openWithCallback(callback, PreCountScrollLabel, foundItems)
 				else:
 					def searchAgain(answer=True):
 						if answer:
@@ -841,7 +910,7 @@ class CSFDLite(Screen):
 		elif choice[1] == 12:
 			self.searchTitle(unquote(self.eventName), search="imdb")
 		elif choice[1] == 14:
-			self.callRecorded(unquote(self.eventName))
+			self.callRecorded("13")#unquote(self.eventName))
 		elif choice[1] == 15:
 			self.searchTitle(unquote(self.eventName), search="infile")
 		elif  choice[1] == 20:
@@ -1429,6 +1498,7 @@ def Plugins(**kwargs):
 				icon="csfd.png",
 				where = wherelist,
 				fnc=main)
+
 
 
 
