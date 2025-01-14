@@ -558,7 +558,7 @@ class CSFDLite(Screen):
 		# 1 = movie info page
 		# 2 = extra infos page
 		self.Page = 0
-		self["actions"] = ActionMap(["CSFDLiteActions"],
+		self["actions"] = ActionMap(["CSFDLiteActions", "CSFDRunActions"],
 		{
 			"okLite": self.showDetails,
 			"cancelLite": self.__onClose,
@@ -572,7 +572,8 @@ class CSFDLite(Screen):
 			"blueLite": self.showExtras,
 			"contextMenuLite": self.contextMenu,
 			"showEventInfoLite": self.showDetails,
-			"recorded": self.recorded
+			"recorded": self.recorded,
+			"csfd": self.recorded
 		}, -1)
 		try:
 			self.container = eConsoleAppContainer()
@@ -1503,6 +1504,7 @@ def Plugins(**kwargs):
 				icon="csfd.png",
 				where = wherelist,
 				fnc=main)
+
 
 
 
