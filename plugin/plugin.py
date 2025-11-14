@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "1.8.7" # ims
+PLUGIN_VERSION = "1.9.0" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -787,15 +787,15 @@ class CSFDLite(Screen):
 			localfile = "/tmp/CSFDquery2.html"
 
 			# default
-			fetchurl = "https://www.csfd.cz/film/" + self.link + "/recenze/?" + str(randint(1000, 9999))
+			fetchurl = "https://www.csfd.cz/film/" + self.link.replace('/prehled/','') + "/recenze/?" + str(randint(1000, 9999))
 			if self.commentsSort == 1:
-				fetchurl = "https://www.csfd.cz/film/" + self.link + "/recenze/?sort=datetime_desc"
+				fetchurl = "https://www.csfd.cz/film/" + self.link.replace('/prehled/','') + "/recenze/?sort=datetime_desc"
 			if self.commentsSort == 2:
-				fetchurl = "https://www.csfd.cz/film/" + self.link + "/recenze/?sort=datetime_asc"
+				fetchurl = "https://www.csfd.cz/film/" + self.link.replace('/prehled/','') + "/recenze/?sort=datetime_asc"
 			if self.commentsSort == 3:	
-				fetchurl = "https://www.csfd.cz/film/" + self.link + "/recenze/?sort=rating"
+				fetchurl = "https://www.csfd.cz/film/" + self.link.replace('/prehled/','') + "/recenze/?sort=rating"
 			if self.commentsSort == 4:	
-				fetchurl = "https://www.csfd.cz/film/" + self.link + "/recenze/?sort=points"
+				fetchurl = "https://www.csfd.cz/film/" + self.link.replace('/prehled/','') + "/recenze/?sort=points"
 
 			print("[CSFDLite] downloading query " + fetchurl + " to " + localfile)
 			dwnpage(fetchurl,localfile).addCallback(self.CSFDquery2).addErrback(self.fetchFailed("showDetails"))
