@@ -1353,13 +1353,13 @@ class CSFDLite(Screen):
 					Detailstext += nazev + '\n'
 				Detailstext += '\n'
 
-			zanr = self.najdi('<div class="genres">(.*?)</div>', self.inhtml)
+			zanr = self.najdi('<div class="genres">(.*?)</div>', self.inhtml).replace('<span class="bullet">', '-').replace('</span>', '')
 			pattern = re.compile(r'(?:<a href=".*?">)?(.*?)(?:</a>)?')
 			zanry = re.findall(pattern, zanr)
 			result = ''.join(zanry)
 			Detailstext += result + '\n'
 
-			zemerokdelka = self.najdi('<div class="origin">(.*?)</div>', self.inhtml)
+			zemerokdelka = self.najdi('<div class="origin">(.*?)</div>', self.inhtml).replace('<span class="bullet">', '-')
 			zemerokdelka = zemerokdelka.replace('<span itemprop="dateCreated">', '').replace('</span>', '').replace('<span>', '')
 			zemerokdelka = re.sub('\s+'," ",zemerokdelka)
 			Detailstext += zemerokdelka + '\n\n'
