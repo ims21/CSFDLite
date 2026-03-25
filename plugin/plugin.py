@@ -2,7 +2,7 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "2.0.0" # ims
+PLUGIN_VERSION = "2.1.0" # ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -123,8 +123,34 @@ def _load_url_sync(url, out_file, headers=None, timeout=20, verify_ssl=False):
 	r = get(url, headers=headers or {}, timeout=timeout, verify=verify_ssl)
 	r.raise_for_status()
 	with open(out_file, "wb") as f:
-			f.write(r.content)
-	return r.text
+		for chunk in r.iter_content(chunk_size=64 * 1024):
+			if chunk:
+				f.write(chunk)
+	return 'not_in_use'
+
+def _dwnpageFallback(a, b, cbOk, cbErr, headers):
+	def download_page(url, out_file, cbOk, cbErr, headers=None, timeout=20, verify_ssl=False):
+		try:
+			r = get(url, headers=headers or {}, timeout=timeout, verify=verify_ssl)
+			r.raise_for_status()
+			with open(out_file, "wb") as f:
+				f.write(r.content)
+			if cbOk:
+				cbOk(r.text)
+		except:
+			print("\n\n[CSFDLite] download_page FAILED _dwnpageFallback=%s\n\n"%url)
+			print(traceback.format_exc())
+			if cbErr:
+				cbErr("Download content failed")
+	try:
+		from threading import Thread
+		Thread(target=download_page, args=(a, b, cbOk, cbErr), kwargs={'headers': headers, 'timeout': 20, 'verify_ssl': False}).start()
+	except Exception as e:
+		print("\n\n[CSFDLite] FAILED _dwnpageFallback=%s\n\n"%a)
+		print(traceback.format_exc())
+		if cbErr:
+			cbErr(str(e))
+	return None
 
 def dwnpageNew(a, b, cbOk, cbErr):
 	csfdHdrs = {
@@ -141,7 +167,24 @@ def dwnpageNew(a, b, cbOk, cbErr):
 		'Sec-Fetch-User': '?1',
 		'Priority': 'u=0, i'
 	}
-	d = deferToThread(_load_url_sync, a, b, csfdHdrs, 20, False)
+	try:
+		from twisted.internet import reactor
+		hasThreadPool = hasattr(reactor, 'getThreadPool')
+	except Exception:
+		hasThreadPool = False
+
+	if not hasThreadPool:
+		print("[CSFDLite] Reactor has no getThreadPool; using fallback downloader")
+		_dwnpageFallback(a, b, cbOk, cbErr, csfdHdrs)
+		return None
+
+	try:
+		d = deferToThread(_load_url_sync, a, b, csfdHdrs, 20, False)
+	except AttributeError:
+		print("[CSFDLite] deferToThread unavailable on current reactor; using fallback downloader")
+		dwnpageFallback(a, b, cbOk, cbErr, csfdHdrs)
+		return None
+
 	if cbOk or cbErr:
 		def _ok(text):
 			if cbOk:
@@ -842,7 +885,6 @@ class CSFDLite(Screen):
 				fetchurl = "https://www.csfd.cz/film/" + self.link.replace('/prehled/','') + "/recenze/?sort=points"
 
 			print("[CSFDLite] downloading query " + fetchurl + " to " + localfile)
-			#dwnpage(fetchurl,localfile).addCallback(self.CSFDquery2).addErrback(self.fetchFailed("showDetails"))
 			dwnpageNew(fetchurl, localfile, self.CSFDquery2, self.fetchFailed)
 			self["menu"].hide()
 			self.resetLabels()
@@ -1066,7 +1108,6 @@ class CSFDLite(Screen):
 			fetchurl = "https://www.csfd.cz/hledat/?q=" + dotaz1
 			self.puvodniurl = fetchurl
 			print("[CSFDLite] Downloading Query " + fetchurl + " to " + localfile)
-			#dwnpage(fetchurl,localfile).addCallback(self.CSFDquery).addErrback(self.CSFDquery)
 			dwnpageNew(fetchurl, localfile, self.CSFDquery, self.CSFDquery)
 		else:
 			self["statusbar"].setText(toStr("Nejde získat Eventname"))
@@ -1095,7 +1136,7 @@ class CSFDLite(Screen):
 			for odkaz, filmnazev, filminfo in self.hledejVse('<h3.*?<a href="/film/(.*?)".*?"film-title-name">(.*?)</a>(.*?)</h3>', seznamcely):
 				hlavninazev = filmnazev
 				celynazev = hlavninazev
-				rok = self.najdi('<span class="info">\(([0-9]{4})', filminfo)
+				rok = self.najdi('<span class="info">\(([0-9]{4})', filminfo).replace('<span class="bullet"',">")
 				typnazev = self.najdi('<span class="info">.*?<span class="info">\((.*[a-z])\)', filminfo)
 				if rok != "":
 					celynazev += ' (' + rok + ')'
@@ -1108,7 +1149,6 @@ class CSFDLite(Screen):
 			fetchurl = "https://www.csfd.cz/hledat/?q=" + self.jmeno1
 			self.puvodniurl = fetchurl
 			print("[CSFDLite] Downloading Query " + fetchurl + " to " + localfile)
-			#dwnpage(fetchurl,localfile).addCallback(self.CSFDquery_dotaz2).addErrback(self.fetchFailed("CSFDquery"))
 			dwnpageNew(fetchurl, localfile, self.CSFDquery_dotaz2, self.fetchFailed)
 
 	def CSFDquery_dotaz2(self, string):			
@@ -1282,7 +1322,6 @@ class CSFDLite(Screen):
 					localfile = "/tmp/poster.jpg"
 					print("[CSFDLite] downloading poster " + posterurl + " to " + localfile)
 					try:
-						#dwnpage(posterurl,localfile).addCallback(self.CSFDPoster).addErrback(self.fetchFailed("CSFDparse - poster"))
 						dwnpageNew(posterurl, localfile, self.CSFDPoster, self.fetchFailed)
 					except:
 						print("no jpg poster!")
