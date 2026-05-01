@@ -2,7 +2,8 @@
 #####################################
 # CSFD Lite by origin from mik9
 #####################################
-PLUGIN_VERSION = "2.1.0" # ims
+PLUGIN_VERSION = "2.3.0" # ims
+# - with compare in recorded movie list by ims
 
 ############## @TODOs
 # - lokalizacia cz, sk, en
@@ -1353,16 +1354,16 @@ class CSFDLite(Screen):
 					Detailstext += nazev + '\n'
 				Detailstext += '\n'
 
-			zanr = self.najdi('<div class="genres">(.*?)</div>', self.inhtml).replace('<span class="bullet">', '-').replace('</span>', '')
+			zanr = self.najdi('<div class="genres">(.*?)</div>', self.inhtml)
 			pattern = re.compile(r'(?:<a href=".*?">)?(.*?)(?:</a>)?')
 			zanry = re.findall(pattern, zanr)
 			result = ''.join(zanry)
 			Detailstext += result + '\n'
 
-			zemerokdelka = self.najdi('<div class="origin">(.*?)</div>', self.inhtml).replace('<span class="bullet">', '-')
+			zemerokdelka = self.najdi('<div class="origin">(.*?)</div>', self.inhtml)
 			zemerokdelka = zemerokdelka.replace('<span itemprop="dateCreated">', '').replace('</span>', '').replace('<span>', '')
 			zemerokdelka = re.sub('\s+'," ",zemerokdelka)
-			Detailstext += zemerokdelka + '\n\n'
+			Detailstext += self.odstraneniTagu(zemerokdelka) + '\n\n'
 
 			vysilani = self.hledejVse('tv-list">\s+<a href=".*?">(.*?)</a>', self.inhtml)
 			if vysilani:
