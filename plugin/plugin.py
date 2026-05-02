@@ -1354,7 +1354,7 @@ class CSFDLite(Screen):
 					Detailstext += nazev + '\n'
 				Detailstext += '\n'
 
-			zanr = self.najdi('<div class="genres">(.*?)</div>', self.inhtml)
+			zanr = self.najdi('<div class="genres">(.*?)</div>', self.inhtml).replace('<span class="bullet">', '-').replace('</span>', '')
 			pattern = re.compile(r'(?:<a href=".*?">)?(.*?)(?:</a>)?')
 			zanry = re.findall(pattern, zanr)
 			result = ''.join(zanry)
